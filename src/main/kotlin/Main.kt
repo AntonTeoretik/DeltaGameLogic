@@ -1,10 +1,13 @@
 import com.delta.*
 
 fun main() {
+    val gameLogic = GameLogic(GameBoard(5))
 
-    val board = GameBoard(10)
-    board.setCell(1, 1, PlayerID.PLAYER_3)
+//    gameLogic.board.setCell(0,1, PlayerID.PLAYER_1)
+//    println(gameLogic.toJson())
+//
+//    println(gameLogic.board.getAllUnstableCells(PlayerID.PLAYER_1))
 
-    val game_logic = GameLogic(GameBoard(10))
-    println(game_logic.toJson())
+    gameLogic.removeUnstableCells()
+
 }

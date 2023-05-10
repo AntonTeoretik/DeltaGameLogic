@@ -5,7 +5,7 @@ import kotlin.math.max
 
 
 class GameLogic(private val board: GameBoard) {
-    private val playerResources = PlayerID.values().associateWith { 1 }.toMutableMap()
+    private val playerResources = PlayerID.values().associateWith { 0 }.toMutableMap()
     private var currentPlayer = PlayerID.PLAYER_1
 
     private var gameIsOver = false
@@ -16,11 +16,15 @@ class GameLogic(private val board: GameBoard) {
         board.setCell(0, board.size - 1, PlayerID.PLAYER_2)
         board.setCell(board.size - 1, 0, PlayerID.PLAYER_3)
         board.setCell(board.size - 1, board.size - 1, PlayerID.PLAYER_4)
+
+        playerResources[PlayerID.PLAYER_1] = 1
     }
 
     fun getCurrentPlayer(): PlayerID {
         return currentPlayer
     }
+
+    fun getPlayerResources() = playerResources
 
     fun getNextPlayer(): PlayerID {
         return when (currentPlayer) {
@@ -37,6 +41,19 @@ class GameLogic(private val board: GameBoard) {
 
         return board.countFriendlyNeighbors(row, col, player) == 1 &&
                 board.countEnemyNeighbors(row, col, player) == 0
+    }
+
+    fun isProductive(row: Int, col: Int): Boolean {
+        val player = board.getCell(row, col) ?: return false
+        return isProductive(row, col, player)
+    }
+
+    fun isBaseCell(row: Int, col: Int): Boolean = board.isBaseCell(row, col)
+
+    fun removeUnstableCells() {
+        PlayerID.values()
+            .flatMap(board::getAllUnstableCells)
+            .forEach { board.freeCell(it.first, it.second) }
     }
 
     private fun countCellsWithCondition(condition : (Int, Int) -> Boolean): Int {
@@ -64,9 +81,18 @@ class GameLogic(private val board: GameBoard) {
 
     fun isValidCellToPlace(row: Int, col: Int, player: PlayerID) : Boolean {
         return player == currentPlayer &&
+                board.countFriendlyNeighbors(row, col, player) > 0 &&
                 board.getCell(row, col) != player &&
                 board.isValidCoordinate(row, col) &&
                 playerResources[player] != null
+    }
+
+    fun getCell(row: Int, col: Int): PlayerID? {
+        return board.getCell(row, col)
+    }
+
+    fun getBoardSize(): Int {
+        return board.size
     }
 
     fun placeCell(row: Int, col: Int, player: PlayerID): Boolean {
@@ -79,6 +105,7 @@ class GameLogic(private val board: GameBoard) {
         // Update the game
         playerResources[player] = playerResources[player]!! - def
         board.setCell(row, col, player)
+        removeUnstableCells()
 
         setGameOver()
 
