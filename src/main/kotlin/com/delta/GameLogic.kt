@@ -5,7 +5,9 @@ import kotlin.math.max
 
 
 class GameLogic(private val board: GameBoard) {
-    private val playerResources = PlayerID.values().associateWith { 0 }.toMutableMap()
+    private val playersResources = PlayerID.values().associateWith { 0 }.toMutableMap()
+    private val playersLoose = PlayerID.values().associateWith { false }.toMutableMap()
+
     private var currentPlayer = PlayerID.PLAYER_1
 
     private var gameIsOver = false
@@ -17,14 +19,15 @@ class GameLogic(private val board: GameBoard) {
         board.setCell(board.size - 1, 0, PlayerID.PLAYER_3)
         board.setCell(board.size - 1, board.size - 1, PlayerID.PLAYER_4)
 
-        playerResources[PlayerID.PLAYER_1] = 1
+        playersResources[PlayerID.PLAYER_1] = 1
+
     }
 
     fun getCurrentPlayer(): PlayerID {
         return currentPlayer
     }
 
-    fun getPlayerResources() = playerResources
+    fun getPlayerResources() = playersResources
 
     fun getNextPlayer(): PlayerID {
         return when (currentPlayer) {
@@ -84,7 +87,7 @@ class GameLogic(private val board: GameBoard) {
                 board.countFriendlyNeighbors(row, col, player) > 0 &&
                 board.getCell(row, col) != player &&
                 board.isValidCoordinate(row, col) &&
-                playerResources[player] != null
+                playersResources[player] != null
     }
 
     fun getCell(row: Int, col: Int): PlayerID? {
@@ -100,22 +103,30 @@ class GameLogic(private val board: GameBoard) {
         if (!isValidCellToPlace(row, col, player)) return false
 
         val def = getDefencePoints(row, col)
-        if (def > playerResources[player]!!) return false
+        if (def > playersResources[player]!!) return false
 
         // Update the game
-        playerResources[player] = playerResources[player]!! - def
+        playersResources[player] = playersResources[player]!! - def
         board.setCell(row, col, player)
         removeUnstableCells()
 
+        updatePlayerStates()
         setGameOver()
 
         return true
     }
 
+    private fun updatePlayerStates() {
+        PlayerID.values().forEach {
+            playersLoose[it] = countFriendlyCells(it) == 0
+        }
+    }
+
     fun endPlayersTurn(player: PlayerID): Boolean {
         if(currentPlayer != player) return false
         currentPlayer = getNextPlayer()
-        playerResources[currentPlayer] = playerResources[currentPlayer]!! + countProductiveCells(currentPlayer) + 1
+        playersResources[currentPlayer] = playersResources[currentPlayer]!! + countProductiveCells(currentPlayer) + 1
+
         setGameOver()
 
         return true
@@ -124,15 +135,12 @@ class GameLogic(private val board: GameBoard) {
     fun isGameOver() = gameIsOver
 
     private fun setGameOver() {
-        gameIsOver = countFreeCells() == 0
+        gameIsOver = playersLoose.values.filter { !it }.size == 1
     }
 
     fun getWinners() : List<PlayerID>? {
         if (!gameIsOver) return null
-        val scores = PlayerID.values().associateWith { countFriendlyCells(it) }
-
-        val max = scores.values.maxOrNull()
-        return scores.filterValues { it == max }.keys.toList()
+        return playersLoose.filter { !it.value }.keys.toList()
     }
 
     fun toJson() : String {

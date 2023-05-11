@@ -1,7 +1,7 @@
 plugins {
+    application
     kotlin("jvm") version "1.8.0"
     id("maven-publish")
-    application
 }
 
 group = "com.delta"
