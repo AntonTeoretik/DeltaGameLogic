@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.delta"
-version = "1.0-SNAPSHOT"
+version = "1.0"
 
 repositories {
     mavenCentral()
@@ -29,20 +29,27 @@ application {
 }
 
 publishing {
+    publications {
+        create<MavenPublication>("myLibrary") {
+            from(components["java"])
+        }
+    }
+
     repositories {
         maven {
-            url = uri("${System.getProperty("user.home")}/.m2/repository")
+            name = "DeltaGameLogic"
+            url = uri(layout.buildDirectory.dir("repo"))
         }
     }
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-            groupId = "com.delta"
-            artifactId = "game-logic"
-            version = "1.0.0"
-        }
-    }
-    println("Published to file://${System.getProperty("user.home")}/.m2/repository")
+
+//    publications {
+//        create<MavenPublication>("mavenJava") {
+//            from(components["java"])
+//            groupId = "com.delta"
+//            artifactId = "game-logic"
+//            version = "1.0.0"
+//        }
+//    }
 }
 
 
