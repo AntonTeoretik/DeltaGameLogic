@@ -5,8 +5,14 @@ import kotlin.math.max
 
 
 class GameLogic(private val board: GameBoard) {
-    private val playersResources = PlayerID.values().associateWith { 0 }.toMutableMap()
+    private val playersResources = PlayerID.values().associateWith { 1 }.toMutableMap()
     private val playersLoose = PlayerID.values().associateWith { false }.toMutableMap()
+
+    val nextPlayers = run {
+        val ids = PlayerID.values().toMutableList()
+        ids.add(ids.first())
+        ids.zipWithNext().toMap()
+    }
 
     private var currentPlayer = PlayerID.PLAYER_1
 
@@ -18,9 +24,6 @@ class GameLogic(private val board: GameBoard) {
         board.setCell(0, board.size - 1, PlayerID.PLAYER_2)
         board.setCell(board.size - 1, 0, PlayerID.PLAYER_3)
         board.setCell(board.size - 1, board.size - 1, PlayerID.PLAYER_4)
-
-        playersResources[PlayerID.PLAYER_1] = 1
-
     }
 
     fun getCurrentPlayer(): PlayerID {
@@ -30,11 +33,15 @@ class GameLogic(private val board: GameBoard) {
     fun getPlayerResources() = playersResources
 
     fun getNextPlayer(): PlayerID {
-        return when (currentPlayer) {
-            PlayerID.PLAYER_1 -> PlayerID.PLAYER_2
-            PlayerID.PLAYER_2 -> PlayerID.PLAYER_3
-            PlayerID.PLAYER_3 -> PlayerID.PLAYER_4
-            PlayerID.PLAYER_4 -> PlayerID.PLAYER_1
+        if (playersLoose.all { it.value }) {
+            throw Exception("Impossible situation -- all players have lost")
+        }
+
+        currentPlayer = nextPlayers[currentPlayer]!!
+
+        return when {
+            playersLoose[currentPlayer]!! -> getNextPlayer()
+            else -> currentPlayer
         }
     }
 
@@ -124,9 +131,9 @@ class GameLogic(private val board: GameBoard) {
 
     fun endPlayersTurn(player: PlayerID): Boolean {
         if(currentPlayer != player) return false
-        currentPlayer = getNextPlayer()
         playersResources[currentPlayer] = playersResources[currentPlayer]!! + countProductiveCells(currentPlayer) + 1
-
+        println("END PLAYERS TURN")
+        currentPlayer = getNextPlayer()
         setGameOver()
 
         return true

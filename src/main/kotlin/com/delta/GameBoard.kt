@@ -12,6 +12,8 @@ enum class PlayerID {
 class GameBoard(val size: Int) {
     val board: Array<Array<PlayerID?>> = Array(size) { Array(size) { null } }
 
+    fun isValidCoordinate(x: Int, y: Int): Boolean = (x in 0 until size) and (y in 0 until size)
+
     fun getCell(row: Int, col: Int): PlayerID? = board.getOrNull(row)?.getOrNull(col)
 
     fun setCell(row: Int, col: Int, player: PlayerID) {
@@ -20,6 +22,70 @@ class GameBoard(val size: Int) {
 
     fun freeCell(raw: Int, col: Int) {
         board[raw][col] = null
+    }
+
+    fun isCorner(row: Int, col: Int): Boolean {
+        val ends = listOf(0, size - 1)
+        return (row in ends) && (col in ends)
+    }
+
+    private fun getNeighbors(row: Int, col: Int): List<Pair<Int, Int>> {
+        val neighbors = mutableListOf<Pair<Int, Int>>()
+
+        for ((dRow, dCol) in listOf(-1 to 0, 0 to 1, 0 to -1, 1 to 0)) {
+            val neighborRow = row + dRow
+            val neighborCol = col + dCol
+
+            if (neighborRow in 0 until size &&
+                neighborCol in 0 until size
+            ) {
+                neighbors.add(neighborRow to neighborCol)
+            }
+
+        }
+
+        return neighbors
+    }
+
+    fun countFriendlyNeighbors(row: Int, col: Int, player: PlayerID): Int {
+        var count = 0
+        for ((dx, dy) in listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)) {
+            val x = row + dx
+            val y = col + dy
+            if (getCell(x, y) == player) {
+                count++
+            }
+        }
+        return count
+    }
+
+    fun countFriendlyNeighborsCorners(row: Int, col: Int, player: PlayerID): Int {
+        var count = 0
+        for (dx in -1..1) {
+            for (dy in -1..1) {
+                val x = row + dx
+                val y = col + dy
+                if ((dx to dy) != (0 to 0) &&
+                    isValidCoordinate(x, y) &&
+                    getCell(x, y) == player
+                ) {
+                    count++
+                }
+            }
+        }
+        return count
+    }
+
+    fun countEnemyNeighbors(row: Int, col: Int, player: PlayerID): Int {
+        var count = 0
+        for ((dx, dy) in listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)) {
+            val x = row + dx
+            val y = col + dy
+            if (isValidCoordinate(x, y) && getCell(x, y) !in setOf(null, player)) {
+                count++
+            }
+        }
+        return count
     }
 
     fun isBaseCell(row: Int, col: Int): Boolean {
@@ -85,72 +151,6 @@ class GameBoard(val size: Int) {
 
         return baseCells
     }
-
-    private fun getNeighbors(row: Int, col: Int): List<Pair<Int, Int>> {
-        val neighbors = mutableListOf<Pair<Int, Int>>()
-
-        for ((dRow, dCol) in listOf(-1 to 0, 0 to 1, 0 to -1, 1 to 0)) {
-            val neighborRow = row + dRow
-            val neighborCol = col + dCol
-
-            if (neighborRow in 0 until size &&
-                neighborCol in 0 until size
-            ) {
-                neighbors.add(neighborRow to neighborCol)
-            }
-
-        }
-
-        return neighbors
-    }
-
-    fun isCorner(row: Int, col: Int): Boolean {
-        val ends = listOf(0, size - 1)
-        return (row in ends) && (col in ends)
-    }
-
-    fun countFriendlyNeighbors(row: Int, col: Int, player: PlayerID): Int {
-        var count = 0
-        for ((dx, dy) in listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)) {
-            val x = row + dx
-            val y = col + dy
-            if (getCell(x, y) == player) {
-                count++
-            }
-        }
-        return count
-    }
-
-    fun countFriendlyNeighborsCorners(row: Int, col: Int, player: PlayerID): Int {
-        var count = 0
-        for (dx in -1..1) {
-            for (dy in -1..1) {
-                val x = row + dx
-                val y = col + dy
-                if ((dx to dy) != (0 to 0) &&
-                    isValidCoordinate(x, y) &&
-                    getCell(x, y) == player
-                ) {
-                    count++
-                }
-            }
-        }
-        return count
-    }
-
-    fun countEnemyNeighbors(row: Int, col: Int, player: PlayerID): Int {
-        var count = 0
-        for ((dx, dy) in listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)) {
-            val x = row + dx
-            val y = col + dy
-            if (isValidCoordinate(x, y) && getCell(x, y) !in setOf(null, player)) {
-                count++
-            }
-        }
-        return count
-    }
-
-    fun isValidCoordinate(x: Int, y: Int): Boolean = (x in 0 until size) and (y in 0 until size)
 
     fun toJson(): String {
         return Gson().toJson(this)
